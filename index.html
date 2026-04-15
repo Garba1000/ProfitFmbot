@@ -1,65 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Hazex Games Hub</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <style>
 body{
     margin:0;
     font-family:Arial;
-    background:#0f172a;
+    background:#000;
     color:#fff;
 }
 
+/* NAV */
 .navbar{
     display:flex;
     justify-content:space-between;
-    padding:12px;
-    background:#22c55e;
+    padding:10px;
+    background:#00ADB5;
     color:#000;
 }
 
+/* DASHBOARD */
 .dashboard{
-    padding:12px;
+    padding:10px;
+    background:#111;
     margin:10px;
-    background:#111827;
     border-radius:10px;
 }
 
 .stat{
     display:flex;
     justify-content:space-between;
-    margin:6px 0;
+    margin:5px 0;
 }
 
-button{
-    width:100%;
+/* GAMES */
+.games-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:10px;
     padding:10px;
-    margin-top:8px;
+}
+
+.game-card{
+    background:#222;
+    padding:10px;
+    border-radius:8px;
+    text-align:center;
+    cursor:pointer;
+}
+
+/* BUTTONS */
+button{
+    background:#00ADB5;
     border:none;
+    padding:10px;
+    margin:5px;
     border-radius:8px;
     font-weight:bold;
-    background:#22c55e;
 }
 
-/* INFO TEXT */
-.info{
-    font-size:12px;
-    color:#9ca3af;
-    margin-top:8px;
-}
-
-/* GAME */
+/* GAME SCREEN */
 #gameScreen{
     display:none;
     position:fixed;
+    top:0;
+    left:0;
     width:100%;
     height:100%;
-    top:0;
     background:#000;
+    z-index:9999;
 }
 
 iframe{
@@ -67,41 +81,61 @@ iframe{
     height:100%;
     border:none;
 }
+
+/* COUNTDOWN */
+.cooldown{
+    font-size:14px;
+    color:yellow;
+}
 </style>
 </head>
 
 <body>
 
 <div class="navbar">
-    <b>🎮 Hazex Hub</b>
+    <h3>🎮 Hazex Hub</h3>
     <div>💰 <span id="balance">0</span></div>
 </div>
 
+<!-- DASHBOARD -->
 <div class="dashboard">
-    <div class="stat">👤 Player ID: <span id="uid"></span></div>
-    <div class="stat">⏳ Bonus Timer: <span id="timer">Ready</span></div>
+    <div class="stat">👤 User ID: <span id="uid"></span></div>
+    <div class="stat">⏳ Ad Cooldown: <span id="timer">Ready</span></div>
+    <div class="stat">👥 Referral ID: <span id="refid"></span></div>
 
-    <button onclick="startGame()">▶ Play Game</button>
-    <button onclick="claimReward()">🎯 Claim Play Reward</button>
-    <button onclick="dailyBonus()">🎁 Daily Bonus</button>
+    <!-- ✅ FIXED BUTTON TEXT -->
     <button onclick="watchAd()">🎁 Bonus Reward</button>
-    <button onclick="copyRef()">👥 Invite Friends</button>
+    <button onclick="claimDaily()">🎁 Daily Bonus</button>
     <button onclick="openWithdraw()">💸 Withdraw</button>
+    <button onclick="copyRef()">👥 Invite</button>
 
-    <div class="info">
-        *Bonus rewards are optional and do not affect gameplay.
+    <!-- ✅ IMPORTANT NOTICE -->
+    <div style="font-size:12px;color:gray;">
+        Bonus rewards are optional and do not affect gameplay.
     </div>
 </div>
 
-<div id="gameScreen">
-<button onclick="exitGame()">⬅ Back</button>
-<iframe id="frame"></iframe>
+<!-- GAMES -->
+<div id="homeScreen">
+<div class="games-list">
+
+<div class="game-card" onclick="openGame()">Subway Surfers</div>
+
+</div>
 </div>
 
+<!-- GAME -->
+<div id="gameScreen">
+<button onclick="closeGame()" style="position:absolute;top:10px;left:10px;z-index:1000;">⬅ Back</button>
+<iframe id="gameFrame"></iframe>
+</div>
+
+<!-- WITHDRAW -->
 <div id="withdrawBox" style="display:none;padding:10px;">
 <h3>Withdraw</h3>
 
 <select id="method">
+<option>Binance</option>
 <option>Litecoin</option>
 <option>USDT TRC20</option>
 </select>
@@ -112,113 +146,91 @@ iframe{
 </div>
 
 <script>
+
+/* =====================
+   USER DATA
+===================== */
 let tg = window.Telegram.WebApp;
 tg.expand();
 
 let userId = tg.initDataUnsafe?.user?.id || Math.floor(Math.random()*99999);
+
 document.getElementById("uid").innerText = userId;
+document.getElementById("refid").innerText = userId;
 
 let balance = parseInt(localStorage.getItem("balance")) || 0;
 document.getElementById("balance").innerText = balance;
 
 /* =====================
-   GAME SYSTEM
+   COOLDOWN SYSTEM (FIXED)
 ===================== */
-let playStart = 0;
+let lastAdTime = localStorage.getItem("lastAdTime") || 0;
 
-function startGame(){
-    document.getElementById("gameScreen").style.display="block";
-    document.getElementById("frame").src =
-    "https://freeonlinegames.github.io/subway-surfers-tokyo/";
+/* ✅ FIXED: 3 MINUTES */
+let cooldown = 180000;
 
-    playStart = Date.now();
-}
-
-function exitGame(){
-    document.getElementById("gameScreen").style.display="none";
-}
-
-/* =====================
-   PLAY REWARD (REAL)
-===================== */
-let lastPlay = localStorage.getItem("play") || 0;
-
-function claimReward(){
+function updateTimer(){
     let now = Date.now();
+    let diff = cooldown - (now - lastAdTime);
 
-    if(now - playStart < 60000){
-        alert("Play at least 1 minute to earn reward");
-        return;
+    if(diff > 0){
+        document.getElementById("timer").innerText = Math.ceil(diff/1000)+"s";
+    }else{
+        document.getElementById("timer").innerText = "Ready";
     }
-
-    if(now - lastPlay < 60000){
-        alert("Wait before claiming again");
-        return;
-    }
-
-    balance += 20;
-    localStorage.setItem("balance",balance);
-    document.getElementById("balance").innerText = balance;
-
-    lastPlay = now;
-    localStorage.setItem("play",lastPlay);
 }
+setInterval(updateTimer,1000);
 
 /* =====================
-   DAILY BONUS
+   ADS REWARD (FIXED)
 ===================== */
-let lastDaily = localStorage.getItem("daily") || 0;
-
-function dailyBonus(){
-    let now = Date.now();
-
-    if(now - lastDaily < 86400000){
-        alert("Daily bonus already claimed");
-        return;
-    }
-
-    balance += 30;
-    localStorage.setItem("balance",balance);
-    document.getElementById("balance").innerText = balance;
-
-    lastDaily = now;
-    localStorage.setItem("daily",lastDaily);
-}
-
-/* =====================
-   ADS (SAFE)
-===================== */
-let lastAd = 0;
-let cooldown = 180000; // 3 minutes
-
 function watchAd(){
+
     let now = Date.now();
 
-    if(now - lastAd < cooldown){
-        alert("Please wait before next bonus");
+    if(now - lastAdTime < cooldown){
         return;
     }
 
+    /* ✅ REMOVE FAKE REWARD */
     if(typeof Adsgram === "undefined") return;
 
     Adsgram.showRewardedAd({
         blockId:"YOUR_BLOCK_ID"
     }).then(()=>{
-        balance += 10;
-        localStorage.setItem("balance",balance);
-        document.getElementById("balance").innerText = balance;
-
-        lastAd = now;
+        reward();
+        lastAdTime = Date.now();
+        localStorage.setItem("lastAdTime",lastAdTime);
     });
 }
 
+function reward(){
+    /* ✅ REDUCED REWARD */
+    balance += 10;
+    localStorage.setItem("balance",balance);
+    document.getElementById("balance").innerText = balance;
+}
+
 /* =====================
-   REFERRAL
+   DAILY BONUS
 ===================== */
-function copyRef(){
-    let link = "https://t.me/YOURBOT?start="+userId;
-    navigator.clipboard.writeText(link);
-    alert("Invite link copied");
+let lastClaim = localStorage.getItem("daily") || 0;
+
+function claimDaily(){
+    let now = Date.now();
+
+    if(now - lastClaim < 86400000){
+        alert("Already claimed");
+        return;
+    }
+
+    balance += 50;
+    lastClaim = now;
+
+    localStorage.setItem("balance",balance);
+    localStorage.setItem("daily",lastClaim);
+
+    document.getElementById("balance").innerText = balance;
 }
 
 /* =====================
@@ -230,29 +242,43 @@ function openWithdraw(){
 
 function submitWithdraw(){
     if(balance < 15000){
-        alert("Minimum withdrawal is 15,000 points");
+        alert("Min 15,000 points");
         return;
     }
 
     let method = document.getElementById("method").value;
     let address = document.getElementById("address").value;
 
-    if(!address) return;
+    if(!address)return;
 
     tg.sendData(`Withdraw\n${method}\n${address}\nID:${userId}`);
 }
 
 /* =====================
-   TIMER
+   REFERRAL
 ===================== */
-function updateTimer(){
-    let now = Date.now();
-    let diff = cooldown - (now - lastAd);
-
-    document.getElementById("timer").innerText =
-        diff > 0 ? Math.ceil(diff/1000)+"s" : "Ready";
+function copyRef(){
+    let link = "https://t.me/YOURBOT?start="+userId;
+    navigator.clipboard.writeText(link);
+    alert("Copied");
 }
-setInterval(updateTimer,1000);
+
+/* =====================
+   GAME (SUBWAY ONLY)
+===================== */
+function openGame(){
+    document.getElementById("homeScreen").style.display="none";
+    document.getElementById("gameScreen").style.display="block";
+    document.getElementById("gameFrame").src =
+    "https://freeonlinegames.github.io/subway-surfers-tokyo/";
+}
+
+function closeGame(){
+    document.getElementById("homeScreen").style.display="block";
+    document.getElementById("gameScreen").style.display="none";
+    document.getElementById("gameFrame").src = "";
+}
+
 </script>
 
 </body>
