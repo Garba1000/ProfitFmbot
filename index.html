@@ -10,39 +10,46 @@
 body{
     margin:0;
     font-family:Arial;
-    background:#000;
+    background:#0f172a;
     color:#fff;
 }
 
 .navbar{
     display:flex;
     justify-content:space-between;
-    padding:10px;
-    background:#00ADB5;
+    padding:12px;
+    background:#22c55e;
     color:#000;
 }
 
 .dashboard{
-    padding:10px;
-    background:#111;
+    padding:12px;
     margin:10px;
+    background:#111827;
     border-radius:10px;
 }
 
 .stat{
     display:flex;
     justify-content:space-between;
-    margin:5px 0;
+    margin:6px 0;
 }
 
 button{
     width:100%;
     padding:10px;
-    margin-top:6px;
+    margin-top:8px;
     border:none;
     border-radius:8px;
     font-weight:bold;
-    background:#00ADB5;
+    background:#22c55e;
+}
+
+/* INFO TEXT */
+.info{
+    font-size:12px;
+    color:#9ca3af;
+    margin-top:8px;
 }
 
 /* GAME */
@@ -51,6 +58,7 @@ button{
     position:fixed;
     width:100%;
     height:100%;
+    top:0;
     background:#000;
 }
 
@@ -65,20 +73,24 @@ iframe{
 <body>
 
 <div class="navbar">
-    <h3>🎮 Hazex Hub</h3>
+    <b>🎮 Hazex Hub</b>
     <div>💰 <span id="balance">0</span></div>
 </div>
 
 <div class="dashboard">
-    <div class="stat">👤 ID: <span id="uid"></span></div>
+    <div class="stat">👤 Player ID: <span id="uid"></span></div>
     <div class="stat">⏳ Bonus Timer: <span id="timer">Ready</span></div>
 
-    <button onclick="startGame()">▶ Play Subway</button>
-    <button onclick="claimPlay()">🎯 Claim Play Reward</button>
+    <button onclick="startGame()">▶ Play Game</button>
+    <button onclick="claimReward()">🎯 Claim Play Reward</button>
     <button onclick="dailyBonus()">🎁 Daily Bonus</button>
     <button onclick="watchAd()">🎁 Bonus Reward</button>
-    <button onclick="copyRef()">👥 Invite</button>
+    <button onclick="copyRef()">👥 Invite Friends</button>
     <button onclick="openWithdraw()">💸 Withdraw</button>
+
+    <div class="info">
+        *Bonus rewards are optional and do not affect gameplay.
+    </div>
 </div>
 
 <div id="gameScreen">
@@ -109,7 +121,9 @@ document.getElementById("uid").innerText = userId;
 let balance = parseInt(localStorage.getItem("balance")) || 0;
 document.getElementById("balance").innerText = balance;
 
-/* GAME */
+/* =====================
+   GAME SYSTEM
+===================== */
 let playStart = 0;
 
 function startGame(){
@@ -124,19 +138,21 @@ function exitGame(){
     document.getElementById("gameScreen").style.display="none";
 }
 
-/* PLAY REWARD */
+/* =====================
+   PLAY REWARD (REAL)
+===================== */
 let lastPlay = localStorage.getItem("play") || 0;
 
-function claimPlay(){
+function claimReward(){
     let now = Date.now();
 
     if(now - playStart < 60000){
-        alert("Play at least 1 minute");
+        alert("Play at least 1 minute to earn reward");
         return;
     }
 
     if(now - lastPlay < 60000){
-        alert("Wait before next reward");
+        alert("Wait before claiming again");
         return;
     }
 
@@ -148,14 +164,16 @@ function claimPlay(){
     localStorage.setItem("play",lastPlay);
 }
 
-/* DAILY */
+/* =====================
+   DAILY BONUS
+===================== */
 let lastDaily = localStorage.getItem("daily") || 0;
 
 function dailyBonus(){
     let now = Date.now();
 
     if(now - lastDaily < 86400000){
-        alert("Come back tomorrow");
+        alert("Daily bonus already claimed");
         return;
     }
 
@@ -167,15 +185,17 @@ function dailyBonus(){
     localStorage.setItem("daily",lastDaily);
 }
 
-/* ADS SAFE */
+/* =====================
+   ADS (SAFE)
+===================== */
 let lastAd = 0;
-let cooldown = 180000;
+let cooldown = 180000; // 3 minutes
 
 function watchAd(){
     let now = Date.now();
 
     if(now - lastAd < cooldown){
-        alert("Wait before next bonus");
+        alert("Please wait before next bonus");
         return;
     }
 
@@ -192,31 +212,47 @@ function watchAd(){
     });
 }
 
-/* REF */
+/* =====================
+   REFERRAL
+===================== */
 function copyRef(){
     let link = "https://t.me/YOURBOT?start="+userId;
     navigator.clipboard.writeText(link);
     alert("Invite link copied");
 }
 
-/* WITHDRAW */
+/* =====================
+   WITHDRAW
+===================== */
 function openWithdraw(){
     document.getElementById("withdrawBox").style.display="block";
 }
 
 function submitWithdraw(){
     if(balance < 15000){
-        alert("Minimum 15,000 points");
+        alert("Minimum withdrawal is 15,000 points");
         return;
     }
 
     let method = document.getElementById("method").value;
     let address = document.getElementById("address").value;
 
-    if(!address)return;
+    if(!address) return;
 
     tg.sendData(`Withdraw\n${method}\n${address}\nID:${userId}`);
 }
+
+/* =====================
+   TIMER
+===================== */
+function updateTimer(){
+    let now = Date.now();
+    let diff = cooldown - (now - lastAd);
+
+    document.getElementById("timer").innerText =
+        diff > 0 ? Math.ceil(diff/1000)+"s" : "Ready";
+}
+setInterval(updateTimer,1000);
 </script>
 
 </body>
