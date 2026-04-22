@@ -1,284 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Hazex Games Hub</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radiocash FM</title>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
 <style>
 body{
-    margin:0;
-    font-family:Arial;
-    background:#000;
-    color:#fff;
+  margin:0;
+  font-family:system-ui;
+  background:#020617;
+  color:#e5e7eb;
+  display:flex;
+  justify-content:center;
+  padding:15px;
 }
-
-/* NAV */
-.navbar{
-    display:flex;
-    justify-content:space-between;
-    padding:10px;
-    background:#00ADB5;
-    color:#000;
+.container{max-width:520px;width:100%}
+.header{
+  background:#041021;
+  padding:18px;
+  border-radius:16px;
+  text-align:center;
+  margin-bottom:12px;
 }
-
-/* DASHBOARD */
-.dashboard{
-    padding:10px;
-    background:#111;
-    margin:10px;
-    border-radius:10px;
+.balance{font-size:26px;font-weight:bold;color:#00ffa6}
+.sub{font-size:13px;color:#9ca3af}
+.card{
+  background:#041021;
+  padding:15px;
+  border-radius:14px;
+  margin-bottom:12px;
 }
-
-.stat{
-    display:flex;
-    justify-content:space-between;
-    margin:5px 0;
+.btn{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  margin-top:8px;
+  background:#00ffa6;
+  color:#000;
+  font-weight:600;
 }
-
-/* GAMES */
-.games-list{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-    gap:10px;
-    padding:10px;
+.playBtn{
+  width:70px;height:70px;
+  border-radius:50%;
+  border:none;
+  background:#00ffa6;
+  font-size:22px;
 }
-
-.game-card{
-    background:#222;
-    padding:10px;
-    border-radius:8px;
-    text-align:center;
-    cursor:pointer;
-}
-
-/* BUTTONS */
-button{
-    background:#00ADB5;
-    border:none;
-    padding:10px;
-    margin:5px;
-    border-radius:8px;
-    font-weight:bold;
-}
-
-/* GAME SCREEN */
-#gameScreen{
-    display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:#000;
-    z-index:9999;
-}
-
-iframe{
-    width:100%;
-    height:100%;
-    border:none;
-}
-
-/* COUNTDOWN */
-.cooldown{
-    font-size:14px;
-    color:yellow;
+.modal{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:#000;
+  display:none;
+  padding:20px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="navbar">
-    <h3>🎮 Hazex Hub</h3>
-    <div>💰 <span id="balance">0</span></div>
+<div class="container">
+
+<div class="header">
+  <div class="balance" id="points">0</div>
+  <div class="sub">Points</div>
+  <div class="sub" id="earned">$0.000</div>
 </div>
 
-<!-- DASHBOARD -->
-<div class="dashboard">
-    <div class="stat">👤 User ID: <span id="uid"></span></div>
-    <div class="stat">⏳ Ad Cooldown: <span id="timer">Ready</span></div>
-    <div class="stat">👥 Referral ID: <span id="refid"></span></div>
-
-    <!-- ✅ FIXED BUTTON TEXT -->
-    <button onclick="watchAd()">🎁 Bonus Reward</button>
-    <button onclick="claimDaily()">🎁 Daily Bonus</button>
-    <button onclick="openWithdraw()">💸 Withdraw</button>
-    <button onclick="copyRef()">👥 Invite</button>
-
-    <!-- ✅ IMPORTANT NOTICE -->
-    <div style="font-size:12px;color:gray;">
-        Bonus rewards are optional and do not affect gameplay.
-    </div>
-</div>
-
-<!-- GAMES -->
-<div id="homeScreen">
-<div class="games-list">
-
-<div class="game-card" onclick="openGame()">Subway Surfers</div>
-
-</div>
-</div>
-
-<!-- GAME -->
-<div id="gameScreen">
-<button onclick="closeGame()" style="position:absolute;top:10px;left:10px;z-index:1000;">⬅ Back</button>
-<iframe id="gameFrame"></iframe>
-</div>
-
-<!-- WITHDRAW -->
-<div id="withdrawBox" style="display:none;padding:10px;">
-<h3>Withdraw</h3>
-
-<select id="method">
-<option>Binance</option>
-<option>Litecoin</option>
-<option>USDT TRC20</option>
+<div class="card" style="text-align:center;">
+<select id="station">
+<option value="https://stream.radioparadise.com/aac-320">Radio Paradise</option>
+<option value="https://stream.live.vc.bbcmedia.co.uk/bbc_world_service">BBC World Service</option>
+<option value="https://ice1.somafm.com/groovesalad-128-mp3">Groove Salad</option>
 </select>
 
-<input id="address" placeholder="Wallet Address" style="width:100%;padding:8px;margin-top:10px;">
-
-<button onclick="submitWithdraw()">Submit</button>
+<button id="playBtn" class="playBtn">
+<i class="fa fa-play"></i>
+</button>
+<div id="status" class="sub">Idle</div>
 </div>
 
-<script>
+<div class="card">
+<button id="watchAd" class="btn">Watch Ad (optional)</button>
+<div id="adsArea"></div>
+</div>
 
-/* =====================
-   USER DATA
-===================== */
-let tg = window.Telegram.WebApp;
+<div class="card">
+<button id="withdrawBtn" class="btn">Withdraw</button>
+<button id="refBtn" class="btn">Copy Referral Link</button>
+<button id="termsBtn" class="btn">Terms</button>
+<button id="infoBtn" class="btn">Info</button>
+<button id="policyBtn" class="btn">Policy</button>
+</div>
+
+<div class="card" style="text-align:center;">
+<div class="sub">Referral Bonus</div>
+<div class="balance" id="refBonus">0</div>
+</div>
+
+</div>
+
+<!-- TERMS -->
+<div id="termsModal" class="modal">
+<h3>Terms</h3>
+<p>
+1. Users earn rewards by listening to radio and interacting with available features.<br><br>
+2. Watching ads is optional but may provide additional rewards.<br><br>
+3. Minimum withdrawal is $5.<br><br>
+4. Abuse or cheating may lead to account restriction.<br><br>
+5. Terms may change anytime without notice.
+</p>
+<button class="btn" onclick="closeModal()">Close</button>
+</div>
+
+<!-- INFO -->
+<div id="infoModal" class="modal">
+<h3>Bot Info</h3>
+<p>
+Radiocash FM allows users to listen to radio and earn points.<br><br>
+- Listen to music<br>
+- Earn rewards<br>
+- Watch ads for bonus<br>
+- Withdraw earnings
+</p>
+<button class="btn" onclick="closeModal()">Close</button>
+</div>
+
+<!-- POLICY -->
+<div id="policyModal" class="modal">
+<h3>Privacy Policy</h3>
+<p>
+1. We do not collect sensitive personal data.<br><br>
+2. Your activity may be used to improve service.<br><br>
+3. Data is not shared with third parties.<br><br>
+4. Local storage is used to save progress.<br><br>
+5. By using this app, you agree to this policy.
+</p>
+<button class="btn" onclick="closeModal()">Close</button>
+</div>
+
+<audio id="radio"></audio>
+
+<script>
+const tg = window.Telegram.WebApp;
 tg.expand();
 
-let userId = tg.initDataUnsafe?.user?.id || Math.floor(Math.random()*99999);
+/* 🔐 USER ID BINDING */
+const uid = tg.initDataUnsafe.user?.id || "guest";
 
-document.getElementById("uid").innerText = userId;
-document.getElementById("refid").innerText = userId;
+/* 🔐 STORAGE KEYS */
+const keyMain = "rc_"+uid;
+const keyBackup = "rc_backup_"+uid;
 
-let balance = parseInt(localStorage.getItem("balance")) || 0;
-document.getElementById("balance").innerText = balance;
+/* LOAD DATA */
+let data = JSON.parse(localStorage.getItem(keyMain)) ||
+           JSON.parse(localStorage.getItem(keyBackup)) ||
+           {points:0, earned:0};
 
-/* =====================
-   COOLDOWN SYSTEM (FIXED)
-===================== */
-let lastAdTime = localStorage.getItem("lastAdTime") || 0;
+let points = data.points;
+let earned = data.earned;
 
-/* ✅ FIXED: 3 MINUTES */
-let cooldown = 180000;
-
-function updateTimer(){
-    let now = Date.now();
-    let diff = cooldown - (now - lastAdTime);
-
-    if(diff > 0){
-        document.getElementById("timer").innerText = Math.ceil(diff/1000)+"s";
-    }else{
-        document.getElementById("timer").innerText = "Ready";
-    }
-}
-setInterval(updateTimer,1000);
-
-/* =====================
-   ADS REWARD (FIXED)
-===================== */
-function watchAd(){
-
-    let now = Date.now();
-
-    if(now - lastAdTime < cooldown){
-        return;
-    }
-
-    /* ✅ REMOVE FAKE REWARD */
-    if(typeof Adsgram === "undefined") return;
-
-    Adsgram.showRewardedAd({
-        blockId:"YOUR_BLOCK_ID"
-    }).then(()=>{
-        reward();
-        lastAdTime = Date.now();
-        localStorage.setItem("lastAdTime",lastAdTime);
-    });
+/* SAVE WITH BACKUP */
+function save(){
+const obj = {points, earned};
+localStorage.setItem(keyMain, JSON.stringify(obj));
+localStorage.setItem(keyBackup, JSON.stringify(obj));
 }
 
-function reward(){
-    /* ✅ REDUCED REWARD */
-    balance += 10;
-    localStorage.setItem("balance",balance);
-    document.getElementById("balance").innerText = balance;
+/* UPDATE UI */
+function update(){
+pointsEl.textContent = points;
+earnedEl.textContent = "$"+earned.toFixed(3);
+save();
 }
 
-/* =====================
-   DAILY BONUS
-===================== */
-let lastClaim = localStorage.getItem("daily") || 0;
-
-function claimDaily(){
-    let now = Date.now();
-
-    if(now - lastClaim < 86400000){
-        alert("Already claimed");
-        return;
-    }
-
-    balance += 50;
-    lastClaim = now;
-
-    localStorage.setItem("balance",balance);
-    localStorage.setItem("daily",lastClaim);
-
-    document.getElementById("balance").innerText = balance;
+/* DETECT RESET */
+if(!localStorage.getItem(keyMain) && localStorage.getItem(keyBackup)){
+localStorage.setItem(keyMain, localStorage.getItem(keyBackup));
 }
 
-/* =====================
-   WITHDRAW
-===================== */
-function openWithdraw(){
-    document.getElementById("withdrawBox").style.display="block";
+/* MODALS */
+function closeModal(){
+termsModal.style.display="none";
+infoModal.style.display="none";
+policyModal.style.display="none";
 }
 
-function submitWithdraw(){
-    if(balance < 15000){
-        alert("Min 15,000 points");
-        return;
-    }
+termsBtn.onclick=()=>termsModal.style.display="block";
+infoBtn.onclick=()=>infoModal.style.display="block";
+policyBtn.onclick=()=>policyModal.style.display="block";
 
-    let method = document.getElementById("method").value;
-    let address = document.getElementById("address").value;
-
-    if(!address)return;
-
-    tg.sendData(`Withdraw\n${method}\n${address}\nID:${userId}`);
+/* WITHDRAW */
+withdrawBtn.onclick=()=>{
+if(earned<5){
+tg.showAlert("Minimum withdraw is $5.");
+return;
 }
+tg.showAlert("Withdraw request sent.");
+};
 
-/* =====================
-   REFERRAL
-===================== */
-function copyRef(){
-    let link = "https://t.me/hunnyrBOT?start="+userId;
-    navigator.clipboard.writeText(link);
-    alert("Copied");
+/* REF */
+refBtn.onclick=()=>{
+navigator.clipboard.writeText("https://t.me/yourbot?start="+uid);
+tg.showAlert("Referral copied.");
+};
+
+/* ADS PRELOAD */
+window.addEventListener("load",()=>{
+const ad=window.Adsgram.init({blockId:"27928"});
+ad.show();
+});
+
+/* WATCH AD */
+watchAd.onclick=()=>{
+const ad=document.createElement("adsgram-task");
+const tasks=["task-27929","task-28027","task-27930","task-27931"];
+ad.setAttribute("data-block-id",tasks[Math.floor(Math.random()*tasks.length)]);
+
+ad.addEventListener("reward",()=>{
+setTimeout(()=>{
+points+=100;
+update();
+},30000);
+});
+
+adsArea.innerHTML="";
+adsArea.appendChild(ad);
+};
+
+/* RADIO */
+let timer;
+playBtn.onclick=()=>{
+if(radio.paused){
+radio.src=station.value;
+radio.play();
+status.textContent="Playing";
+
+timer=setInterval(()=>{
+if(points>=100){
+points-=100;
+earned+=0.0002;
 }
+update();
+},20000);
 
-/* =====================
-   GAME (SUBWAY ONLY)
-===================== */
-function openGame(){
-    document.getElementById("homeScreen").style.display="none";
-    document.getElementById("gameScreen").style.display="block";
-    document.getElementById("gameFrame").src =
-    "https://freeonlinegames.github.io/subway-surfers-tokyo/";
+}else{
+radio.pause();
+clearInterval(timer);
+status.textContent="Paused";
 }
+};
 
-function closeGame(){
-    document.getElementById("homeScreen").style.display="block";
-    document.getElementById("gameScreen").style.display="none";
-    document.getElementById("gameFrame").src = "";
-}
+const pointsEl=document.getElementById("points");
+const earnedEl=document.getElementById("earned");
 
+update();
 </script>
 
 </body>
