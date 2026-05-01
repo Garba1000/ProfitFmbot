@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profit FM</title>
+<title>Music Earn</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
@@ -74,15 +74,13 @@ body{
 </div>
 
 <div class="card" style="text-align:center;">
-<select id="station">
-<option value="https://stream.radioparadise.com/aac-320">Radio Paradise</option>
-<option value="https://stream.live.vc.bbcmedia.co.uk/bbc_world_service">BBC World Service</option>
-<option value="https://ice1.somafm.com/groovesalad-128-mp3">Groove Salad</option>
-</select>
+<h3 id="trackTitle">No track loaded</h3>
 
 <button id="playBtn" class="playBtn">
 <i class="fa fa-play"></i>
 </button>
+
+<button id="nextBtn" class="btn">Next Music</button>
 <div id="status" class="sub">Idle</div>
 </div>
 
@@ -110,11 +108,10 @@ body{
 <div id="termsModal" class="modal">
 <h3>Terms</h3>
 <p>
-1. Users earn rewards by listening to radio and interacting with available features.<br><br>
-2. Watching ads is optional but may provide additional rewards.<br><br>
+1. Users earn rewards by listening to music.<br><br>
+2. Watching ads is optional.<br><br>
 3. Minimum withdrawal is $5.<br><br>
-4. Abuse or cheating may lead to account restriction.<br><br>
-5. Terms may change anytime without notice.
+4. Abuse may lead to restriction.
 </p>
 <button class="btn" onclick="closeModal()">Close</button>
 </div>
@@ -123,9 +120,8 @@ body{
 <div id="infoModal" class="modal">
 <h3>Bot Info</h3>
 <p>
-Profit FM allows users to listen to radio and earn points.<br><br>
 - Listen to music<br>
-- Earn rewards<br>
+- Earn points gradually<br>
 - Watch ads for bonus<br>
 - Withdraw earnings
 </p>
@@ -136,29 +132,26 @@ Profit FM allows users to listen to radio and earn points.<br><br>
 <div id="policyModal" class="modal">
 <h3>Privacy Policy</h3>
 <p>
-1. We do not collect sensitive personal data.<br><br>
-2. Your activity may be used to improve service.<br><br>
-3. Data is not shared with third parties.<br><br>
-4. bot storage is used to save progress.<br><br>
-5. By using this app, you agree to this policy.
+No sensitive data collected.<br>
+Local storage used for progress.<br>
+No third-party sharing.
 </p>
 <button class="btn" onclick="closeModal()">Close</button>
 </div>
 
-<audio id="radio"></audio>
+<audio id="player"></audio>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-/* 🔐 USER ID BINDING */
+/* USER */
 const uid = tg.initDataUnsafe.user?.id || "guest";
 
-/* 🔐 STORAGE KEYS */
-const keyMain = "rc_"+uid;
-const keyBackup = "rc_backup_"+uid;
+/* STORAGE */
+const keyMain = "mc_"+uid;
+const keyBackup = "mc_backup_"+uid;
 
-/* LOAD DATA */
 let data = JSON.parse(localStorage.getItem(keyMain)) ||
            JSON.parse(localStorage.getItem(keyBackup)) ||
            {points:0, earned:0};
@@ -166,23 +159,18 @@ let data = JSON.parse(localStorage.getItem(keyMain)) ||
 let points = data.points;
 let earned = data.earned;
 
-/* SAVE WITH BACKUP */
+/* SAVE */
 function save(){
 const obj = {points, earned};
 localStorage.setItem(keyMain, JSON.stringify(obj));
 localStorage.setItem(keyBackup, JSON.stringify(obj));
 }
 
-/* UPDATE UI */
+/* UPDATE */
 function update(){
 pointsEl.textContent = points;
 earnedEl.textContent = "$"+earned.toFixed(3);
 save();
-}
-
-/* DETECT RESET */
-if(!localStorage.getItem(keyMain) && localStorage.getItem(keyBackup)){
-localStorage.setItem(keyMain, localStorage.getItem(keyBackup));
 }
 
 /* MODALS */
@@ -207,59 +195,74 @@ tg.showAlert("Withdraw request sent.");
 
 /* REF */
 refBtn.onclick=()=>{
-navigator.clipboard.writeText("https://t.me/Brewerebot?start="+uid);
+navigator.clipboard.writeText("https://t.me/YOURBOT?start="+uid);
 tg.showAlert("Referral copied.");
 };
 
-/* ADS PRELOAD */
-window.addEventListener("load",()=>{
-const ad=window.Adsgram.init({blockId:"28385"});
-ad.show();
-});
-
-/* WATCH AD */
+/* ADSGRAM (FIXED - NO AUTO LOAD) */
 watchAd.onclick=()=>{
-const ad=document.createElement("adsgram-task");
-const tasks=["task-28381","task-28382","task-28383","task-28384"];
-ad.setAttribute("data-block-id",tasks[Math.floor(Math.random()*tasks.length)]);
-
-ad.addEventListener("reward",()=>{
-setTimeout(()=>{
-points+=100;
-update();
-},30000);
+const ad = window.Adsgram.init({
+  blockId: "28385"
 });
 
-adsArea.innerHTML="";
-adsArea.appendChild(ad);
+ad.show().then(()=>{
+  points += 50;
+  update();
+  tg.showAlert("You earned 50 points!");
+}).catch(()=>{
+  tg.showAlert("Ad not available.");
+});
 };
 
-/* RADIO */
+/* MUSIC API */
+async function loadMusic(){
+try{
+const res = await fetch("https://api.jamendo.com/v3.0/tracks/?client_id=49f9c4d1&format=json&limit=1");
+const data = await res.json();
+const track = data.results[0];
+
+player.src = track.audio;
+trackTitle.textContent = track.name + " - " + track.artist_name;
+
+}catch(e){
+trackTitle.textContent = "Failed to load music";
+}
+}
+
+/* PLAYER */
 let timer;
+
 playBtn.onclick=()=>{
-if(radio.paused){
-radio.src=station.value;
-radio.play();
+if(player.paused){
+player.play();
 status.textContent="Playing";
 
 timer=setInterval(()=>{
-if(points>=100){
-points-=100;
-earned+=0.0002;
-}
+points+=10;
+earned+=0.0001;
 update();
-},20000);
+},30000);
 
 }else{
-radio.pause();
+player.pause();
 clearInterval(timer);
 status.textContent="Paused";
 }
 };
 
+/* NEXT MUSIC */
+nextBtn.onclick=()=>{
+player.pause();
+clearInterval(timer);
+loadMusic();
+status.textContent="New track loaded";
+};
+
+/* INIT */
 const pointsEl=document.getElementById("points");
 const earnedEl=document.getElementById("earned");
 
+loadMusic();
 update();
 </script>
 
