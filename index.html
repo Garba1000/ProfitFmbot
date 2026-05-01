@@ -74,13 +74,13 @@ body{
 </div>
 
 <div class="card" style="text-align:center;">
-<h3 id="trackTitle">No track loaded</h3>
+<h3 id="trackTitle">No stream loaded</h3>
 
 <button id="playBtn" class="playBtn">
 <i class="fa fa-play"></i>
 </button>
 
-<button id="nextBtn" class="btn">Next Music</button>
+<button id="nextBtn" class="btn">Switch Station</button>
 <div id="status" class="sub">Idle</div>
 </div>
 
@@ -108,7 +108,7 @@ body{
 <div id="termsModal" class="modal">
 <h3>Terms</h3>
 <p>
-1. Users earn rewards by listening to music.<br><br>
+1. Users earn rewards by listening to live music streams.<br><br>
 2. Ads are optional.<br><br>
 3. Minimum withdrawal is $5.<br><br>
 4. Abuse may lead to restriction.
@@ -120,7 +120,7 @@ body{
 <div id="infoModal" class="modal">
 <h3>Bot Info</h3>
 <p>
-- Listen to music<br>
+- Listen to live music<br>
 - Earn points gradually<br>
 - Watch ads for bonus<br>
 - Withdraw earnings
@@ -214,30 +214,30 @@ ad.show().then(()=>{
 });
 };
 
-/* REAL MUSIC (NO API FAIL) */
-const tracks = [
+/* LIVE STREAMS */
+const streams = [
 {
-title:"SoundHelix Song 1",
-url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+  name:"BBC Radio 1",
+  url:"https://stream.live.vc.bbcmedia.co.uk/bbc_radio_one"
 },
 {
-title:"SoundHelix Song 2",
-url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+  name:"BBC Radio 2",
+  url:"https://stream.live.vc.bbcmedia.co.uk/bbc_radio_two"
 },
 {
-title:"SoundHelix Song 3",
-url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+  name:"Groove Salad (Chill)",
+  url:"https://ice1.somafm.com/groovesalad-128-mp3"
 },
 {
-title:"SoundHelix Song 4",
-url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
+  name:"Radio Paradise",
+  url:"https://stream.radioparadise.com/aac-320"
 }
 ];
 
 function loadMusic(){
-const track = tracks[Math.floor(Math.random()*tracks.length)];
-player.src = track.url;
-trackTitle.textContent = track.title;
+const stream = streams[Math.floor(Math.random()*streams.length)];
+player.src = stream.url;
+trackTitle.textContent = stream.name + " (Live)";
 }
 
 /* PLAYER */
@@ -261,13 +261,16 @@ status.textContent="Paused";
 }
 };
 
-/* NEXT */
+/* SWITCH STATION */
 nextBtn.onclick=()=>{
 player.pause();
 clearInterval(timer);
 loadMusic();
-status.textContent="New track loaded";
+status.textContent="Switched station";
 };
+
+/* AUTO RELOAD IF STREAM ENDS */
+player.onended = loadMusic;
 
 /* INIT */
 const pointsEl=document.getElementById("points");
