@@ -109,7 +109,7 @@ body{
 <h3>Terms</h3>
 <p>
 1. Users earn rewards by listening to music.<br><br>
-2. Watching ads is optional.<br><br>
+2. Ads are optional.<br><br>
 3. Minimum withdrawal is $5.<br><br>
 4. Abuse may lead to restriction.
 </p>
@@ -133,7 +133,7 @@ body{
 <h3>Privacy Policy</h3>
 <p>
 No sensitive data collected.<br>
-Local storage used for progress.<br>
+Local storage used only.<br>
 No third-party sharing.
 </p>
 <button class="btn" onclick="closeModal()">Close</button>
@@ -199,7 +199,7 @@ navigator.clipboard.writeText("https://t.me/YOURBOT?start="+uid);
 tg.showAlert("Referral copied.");
 };
 
-/* ADSGRAM (FIXED - NO AUTO LOAD) */
+/* ADSGRAM (SAFE) */
 watchAd.onclick=()=>{
 const ad = window.Adsgram.init({
   blockId: "28385"
@@ -214,19 +214,30 @@ ad.show().then(()=>{
 });
 };
 
-/* MUSIC API */
-async function loadMusic(){
-try{
-const res = await fetch("https://api.jamendo.com/v3.0/tracks/?client_id=49f9c4d1&format=json&limit=1");
-const data = await res.json();
-const track = data.results[0];
-
-player.src = track.audio;
-trackTitle.textContent = track.name + " - " + track.artist_name;
-
-}catch(e){
-trackTitle.textContent = "Failed to load music";
+/* REAL MUSIC (NO API FAIL) */
+const tracks = [
+{
+title:"SoundHelix Song 1",
+url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+},
+{
+title:"SoundHelix Song 2",
+url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+},
+{
+title:"SoundHelix Song 3",
+url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+},
+{
+title:"SoundHelix Song 4",
+url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
 }
+];
+
+function loadMusic(){
+const track = tracks[Math.floor(Math.random()*tracks.length)];
+player.src = track.url;
+trackTitle.textContent = track.title;
 }
 
 /* PLAYER */
@@ -250,7 +261,7 @@ status.textContent="Paused";
 }
 };
 
-/* NEXT MUSIC */
+/* NEXT */
 nextBtn.onclick=()=>{
 player.pause();
 clearInterval(timer);
